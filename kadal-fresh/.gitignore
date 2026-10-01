@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# SQLite database files and journaling artifacts
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+backend/*.sqlite
+backend/*.sqlite3
+
+# Uploads and private user data
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs, temp, and OS-specific files
+*.log
+npm-debug.log*
+logs/
+*.pid
+.DS_Store
+Thumbs.db
+
+# Editor / tooling noise
+.vscode/
+.idea/
+
+# Build output if added later
+/dist/
+/build/
+coverage/

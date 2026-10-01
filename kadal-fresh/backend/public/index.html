@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="meta.title">Kadal Fresh — Fresh Fish, Delivered Daily</title>
+<meta name="description" data-i18n-content="meta.description" content="Order fresh fish online. Choose your weight, track delivery, and get today's catch at your door.">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div id="view-customer">
+<header class="topbar">
+  <div class="navrow">
+    <div class="brand" onclick="go('home')"><span class="dot"></span>Kadal Fresh</div>
+    <nav class="links">
+      <a onclick="go('home')" data-nav="home" data-i18n="nav.home">Home</a>
+      <a onclick="go('shop')" data-nav="shop" data-i18n="nav.shop">Shop</a>
+      <a onclick="go('about')" data-nav="about" data-i18n="nav.about">About</a>
+      <a onclick="go('contact')" data-nav="contact" data-i18n="nav.contact">Contact</a>
+      <a onclick="go('orders')" data-nav="orders" data-i18n="nav.orders">My Orders</a>
+      <a onclick="customerToken ? go('account') : openCustomerLogin()" id="accountLink">Login</a>
+    </nav>
+    <div class="navactions">
+      <div class="language-switch" role="group" data-i18n-aria-label="language.choose" aria-label="Choose language">
+        <button type="button" data-language="en" onclick="setLanguage('en')" data-i18n="language.english" aria-pressed="true" class="active">English</button>
+        <span aria-hidden="true">|</span>
+        <button type="button" data-language="ta" onclick="setLanguage('ta')" data-i18n="language.tamil" aria-pressed="false">தமிழ்</button>
+      </div>
+      <button class="iconbtn" aria-label="Cart" data-i18n-aria-label="nav.cart" onclick="go('cart')"><span data-i18n="nav.cart">Cart</span><span class="badge hide" id="cartBadge">0</span></button>
+      <button class="burger" aria-label="Menu" data-i18n-aria-label="nav.menu" onclick="document.getElementById('mmenu').classList.toggle('open')">☰</button>
+    </div>
+  </div>
+  <div class="mobilemenu" id="mmenu">
+    <a onclick="go('home')" data-i18n="nav.home">Home</a><a onclick="go('shop')" data-i18n="nav.shop">Shop</a><a onclick="go('about')" data-i18n="nav.about">About</a>
+    <a onclick="go('contact')" data-i18n="nav.contact">Contact</a><a onclick="go('orders')" data-i18n="nav.orders">My Orders</a><a onclick="customerToken ? go('account') : openCustomerLogin()" data-i18n="nav.account">Account</a>
+  </div>
+</header>
+
+<div id="page-home">
+  <div class="hero">
+    <div class="hero-inner">
+      <div>
+        <h1 data-i18n="hero.title">Today's catch, at your door by evening.</h1>
+        <p data-i18n="hero.description">Fresh fish, weighed and priced exactly how you need it — from 250g to family-size cuts. Managed live by our team, not hard-coded.</p>
+        <div class="hero-ctas">
+          <button class="btn btn-primary" onclick="go('shop')" data-i18n="hero.shop">Browse today's catch</button>
+          <button class="btn btn-outline" style="border-color:rgba(255,255,255,.4);color:#fff" onclick="go('about')" data-i18n="hero.how">How it works</button>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-stat"><span data-i18n="hero.cleaned">Cleaned & cut to order</span><b data-i18n="hero.yes">Yes</b></div>
+        <div class="hero-stat"><span data-i18n="hero.deliveryWindow">Delivery window</span><b data-i18n="hero.sameDay">Same day</b></div>
+        <div class="hero-stat"><span data-i18n="hero.payOnDelivery">Pay on delivery</span><b data-i18n="hero.available">Available</b></div>
+      </div>
+    </div>
+  </div>
+  <section class="wrap">
+    <div class="section-head"><h2 data-i18n="home.categories">Shop by category</h2></div>
+    <div class="grid" id="catGrid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"></div>
+  </section>
+  <section class="wrap">
+    <div class="section-head">
+      <div><h2 data-i18n="home.freshToday">Fresh in today</h2><p data-i18n="home.handPicked">Hand-picked and in stock right now.</p></div>
+      <button class="btn btn-ghost" onclick="go('shop')" data-i18n="home.viewAll">View all →</button>
+    </div>
+    <div class="grid" id="featuredGrid"></div>
+  </section>
+  <section class="wrap">
+    <div class="section-head"><h2 data-i18n="home.faq">Frequently asked</h2></div>
+    <div id="faqList">
+      <div class="faqitem" onclick="this.classList.toggle('open')"><div class="faqq"><span data-i18n="home.faqPriceQ">How is the price calculated?</span><span>+</span></div><div class="faqa"><p data-i18n="home.faqPriceA">Every fish has a price per kg set by our team. Pick a weight and the exact price is calculated instantly.</p></div></div>
+      <div class="faqitem" onclick="this.classList.toggle('open')"><div class="faqq"><span data-i18n="home.faqTrackQ">Can I track my order?</span><span>+</span></div><div class="faqa"><p data-i18n="home.faqTrackA">Yes — open "My Orders" any time to see live status.</p></div></div>
+      <div class="faqitem" onclick="this.classList.toggle('open')"><div class="faqq"><span data-i18n="home.faqLocationQ">What if I deny location access?</span><span>+</span></div><div class="faqa"><p data-i18n="home.faqLocationA">No problem — type your delivery address manually at checkout.</p></div></div>
+    </div>
+  </section>
+</div>
+
+<div id="page-shop" class="hide">
+  <section class="wrap">
+    <div class="section-head"><h2 data-i18n="shop.title">Shop fresh fish</h2><p data-i18n="shop.description">Filter, search, and pick your weight at checkout.</p></div>
+    <div class="filters">
+      <div class="search-box">🔍<input id="searchInput" data-i18n-placeholder="shop.search" placeholder="Search fish..." oninput="renderShop()"></div>
+      <div id="catChips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      <select class="sortsel" id="sortSel" onchange="renderShop()">
+        <option value="name" data-i18n="shop.sortName">Sort: Name</option>
+        <option value="priceLow" data-i18n="shop.sortLow">Price: Low to High</option>
+        <option value="priceHigh" data-i18n="shop.sortHigh">Price: High to Low</option>
+      </select>
+    </div>
+    <div class="grid" id="shopGrid"></div>
+  </section>
+</div>
+
+<div id="page-about" class="hide">
+  <section class="wrap" style="max-width:760px">
+    <h2 data-i18n="about.title">About Kadal Fresh</h2>
+    <p data-i18n="about.body">We work directly with local fishing boats and trusted farms to bring fish to your table within hours of arrival. Every fish is weighed and priced transparently.</p>
+  </section>
+</div>
+
+<div id="page-contact" class="hide">
+  <section class="wrap" style="max-width:560px">
+    <h2 data-i18n="contact.title">Contact us</h2>
+    <div class="summarybox" style="margin-top:16px">
+      <div class="sumrow"><span data-i18n="contact.phone">Phone</span><b id="contactPhone">+91 98765 43210</b></div>
+      <div class="sumrow"><span data-i18n="contact.email">Email</span><b id="contactEmail">hello@kadalfresh.in</b></div>
+      <div class="sumrow"><span data-i18n="contact.hours">Hours</span><b id="contactHours">7 AM – 9 PM, daily</b></div>
+    </div>
+  </section>
+</div>
+
+<div id="page-cart" class="hide">
+  <section class="wrap" style="max-width:760px"><h2 data-i18n="cart.title">Your cart</h2><div id="cartArea"></div></section>
+</div>
+
+<div id="page-checkout" class="hide">
+  <section class="wrap" style="max-width:760px">
+    <h2 data-i18n="checkout.title">Checkout</h2>
+    <div class="locbar" id="locBar">
+      📍 <span id="locStatus" data-i18n="checkout.locationPrompt">Add your delivery address, or share your location to speed this up.</span>
+      <button class="btn btn-sm btn-outline" onclick="requestLocation()" data-i18n="checkout.useLocation">Use my location</button>
+    </div>
+    <form id="checkoutForm" onsubmit="return placeOrder(event)">
+      <div class="formgrid">
+        <div class="field" id="f-name"><label data-i18n="checkout.name">Full name</label><input required id="custName"><span class="err" data-i18n="checkout.nameError">Please enter your name.</span></div>
+        <div class="field" id="f-phone"><label data-i18n="checkout.mobile">Mobile number</label><input required id="custPhone" pattern="[0-9]{10}" data-i18n-placeholder="checkout.mobilePlaceholder" placeholder="10-digit number" readonly><span class="err" data-i18n="checkout.mobileError">Enter a valid 10-digit number.</span></div>
+      </div>
+      <div id="savedAddressWrap" class="field"></div><div class="field" id="f-addr"><label data-i18n="checkout.address">Delivery address</label><textarea required id="custAddr" rows="3" data-i18n-placeholder="checkout.addressPlaceholder" placeholder="House no, street, area, landmark"></textarea><span class="err" data-i18n="checkout.addressError">Delivery address is required.</span></div>
+      <h3 style="margin-top:22px;font-size:1.1rem" data-i18n="checkout.paymentMethod">Payment method</h3>
+      <div class="paymethods" id="payMethods"><label class="paymethod active"><input type="radio" name="pay" value="cod" checked style="display:none"><span data-i18n="checkout.cod">Cash on Delivery</span></label></div>
+      <div class="summarybox" style="margin-top:22px" id="checkoutSummary"></div>
+      <div id="checkoutErr" style="color:var(--danger);margin-top:10px;font-size:.9rem"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:15px" type="submit" id="placeOrderBtn" data-i18n="checkout.placeOrder">Place order</button>
+    </form>
+  </section>
+</div>
+
+<div id="page-orders" class="hide">
+  <section class="wrap" style="max-width:760px">
+    <h2 data-i18n="orders.title">My orders</h2>
+    <p data-i18n="orders.privacy">Your orders are private to your signed-in account. Use the order code to open full details.</p>
+    <div id="ordersArea" style="margin-top:20px"></div>
+  </section>
+</div>
+
+<div id="page-account" class="hide">
+  <section class="wrap" style="max-width:760px">
+    <div class="section-head"><div><h2 data-i18n="account.title">Your account</h2><p data-i18n="account.description">Profile and saved delivery addresses.</p></div><button class="btn btn-outline btn-sm" onclick="customerLogout();go('home')" data-i18n="account.signOut">Sign out</button></div>
+    <form id="profileForm" onsubmit="return saveCustomerProfile(event)">
+      <div class="formgrid"><div class="field"><label data-i18n="checkout.name">Full name</label><input id="profileName" required maxlength="100"></div><div class="field"><label data-i18n="checkout.mobile">Mobile number</label><input id="profilePhone" readonly></div></div>
+      <button class="btn btn-primary" type="submit" data-i18n="account.saveProfile">Save profile</button>
+    </form>
+    <h3 style="margin-top:30px" data-i18n="account.savedAddresses">Saved addresses</h3><div id="accountAddresses"></div>
+    <form id="addressForm" onsubmit="return addCustomerAddress(event)" style="margin-top:20px">
+      <div class="field"><label data-i18n="account.addAddress">Add a delivery address</label><textarea id="newAddress" rows="3" maxlength="500" required data-i18n-placeholder="account.addressPlaceholder" placeholder="House no, street, area, landmark"></textarea></div>
+      <button class="btn btn-outline" type="submit" data-i18n="account.saveAddress">Save address</button>
+    </form>
+    <div id="accountErr" role="status" style="color:var(--danger);margin-top:10px"></div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="footgrid">
+      <div><h4>Kadal Fresh</h4><p style="color:#B7CBC8" data-i18n="footer.tagline">Fresh fish, weighed exactly right, delivered same day.</p></div>
+      <div><h4 data-i18n="nav.shop">Shop</h4><a onclick="go('shop')" data-i18n="footer.allFish">All fish</a></div>
+      <div><h4 data-i18n="footer.company">Company</h4><a onclick="go('about')" data-i18n="nav.about">About</a><a onclick="go('contact')" data-i18n="nav.contact">Contact</a></div>
+      <div><h4 data-i18n="footer.account">Account</h4><a onclick="go('orders')" data-i18n="nav.orders">My orders</a><a onclick="go('cart')" data-i18n="nav.cart">Cart</a></div>
+    </div>
+    <div class="footbottom">
+      <span data-i18n="footer.rights">© 2026 Kadal Fresh. All rights reserved.</span>
+      <button class="adminlink" onclick="go('admin')" data-i18n="footer.adminLogin">Admin login</button>
+    </div>
+  </div>
+</footer>
+</div>
+
+<div id="view-admin" class="hide">
+  <div id="adminLoginPage">
+    <div class="loginbox">
+      <div class="language-switch login-language-switch" role="group" data-i18n-aria-label="language.choose" aria-label="Choose language">
+        <button type="button" data-language="en" onclick="setLanguage('en')" data-i18n="language.english" aria-pressed="true" class="active">English</button>
+        <span aria-hidden="true">|</span>
+        <button type="button" data-language="ta" onclick="setLanguage('ta')" data-i18n="language.tamil" aria-pressed="false">தமிழ்</button>
+      </div>
+      <h2 data-i18n="admin.loginTitle">Admin login</h2>
+      <p data-i18n="admin.loginDescription">Manage products, prices, and orders.</p>
+      <div class="field"><label data-i18n="admin.username">Username</label><input id="adUser"></div>
+      <div class="field"><label data-i18n="admin.password">Password</label><input id="adPass" type="password"></div>
+      <button class="btn btn-dark" style="width:100%" onclick="adminLogin()" data-i18n="admin.logIn">Log in</button>
+      <div id="adminLoginErr" style="color:var(--danger);font-size:.85rem;margin-top:8px"></div>
+      <div class="demohint" data-i18n="admin.firstLoginHint">First login uses the seeded credentials configured in backend/.env. You will be required to change the initial password.</div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="go('home')" data-i18n="admin.backToSite">← Back to site</button>
+    </div>
+  </div>
+
+  <div id="adminDashboard" class="hide">
+    <div class="adminshell">
+      <div class="adminside">
+        <div class="abrand" data-i18n="admin.brand">Kadal Fresh Admin</div>
+        <div class="aitem active" data-a="dash" onclick="adminGo('dash')" data-i18n="admin.dashboard">Dashboard</div>
+        <div class="aitem" data-a="products" onclick="adminGo('products')" data-i18n="admin.products">Products</div>
+        <div class="aitem" data-a="categories" onclick="adminGo('categories')" data-i18n="admin.categories">Categories</div>
+        <div class="aitem" data-a="orders" onclick="adminGo('orders')" data-i18n="admin.orders">Orders</div>
+        <div class="aitem" data-a="settings" onclick="adminGo('settings')" data-i18n="admin.settings">Settings</div>
+        <div class="aitem" onclick="adminLogout()" style="margin-top:16px;color:#F0835A" data-i18n="admin.logout">Logout</div>
+        <div class="aitem" onclick="go('home')" data-i18n="admin.viewSite">View site →</div>
+      </div>
+      <div class="adminmain">
+        <div class="admin-toolbar">
+          <div class="language-switch" role="group" data-i18n-aria-label="language.choose" aria-label="Choose language">
+            <button type="button" data-language="en" onclick="setLanguage('en')" data-i18n="language.english" aria-pressed="true" class="active">English</button>
+            <span aria-hidden="true">|</span>
+            <button type="button" data-language="ta" onclick="setLanguage('ta')" data-i18n="language.tamil" aria-pressed="false">தமிழ்</button>
+          </div>
+        </div>
+        <div id="apage-dash">
+          <h2 data-i18n="admin.dashboard">Dashboard</h2>
+          <div class="statgrid" id="statGrid"></div>
+          <h3 data-i18n="admin.recentOrders">Recent orders</h3>
+          <div class="tablewrap"><table class="adtable"><thead><tr><th data-i18n="admin.orders">Order</th><th data-i18n="admin.customer">Customer</th><th data-i18n="admin.total">Total</th><th data-i18n="admin.status">Status</th></tr></thead><tbody id="recentOrdersBody"></tbody></table></div>
+        </div>
+        <div id="apage-products" class="hide">
+          <div class="section-head"><h2 data-i18n="admin.products">Products</h2><button class="btn btn-primary btn-sm" onclick="openProductEditor()" data-i18n="admin.addFish">+ Add fish</button></div>
+          <div class="tablewrap"><table class="adtable"><thead><tr><th data-i18n="admin.fish">Fish</th><th data-i18n="admin.category">Category</th><th data-i18n="admin.priceKg">Price/kg</th><th data-i18n="admin.weights">Weights</th><th data-i18n="admin.stockG">Stock (g)</th><th data-i18n="admin.availability">Availability</th><th data-i18n="admin.actions">Actions</th></tr></thead><tbody id="productsBody"></tbody></table></div>
+        </div>
+        <div id="apage-categories" class="hide">
+          <div class="section-head"><h2 data-i18n="admin.categories">Categories</h2></div>
+          <div class="field" style="max-width:320px"><label data-i18n="admin.newCategory">New category name</label><input id="newCatName"></div>
+          <button class="btn btn-primary btn-sm" onclick="addCategory()" data-i18n="admin.addCategory">Add category</button>
+          <div class="tablewrap" style="margin-top:18px"><table class="adtable"><thead><tr><th data-i18n="admin.name">Name</th><th data-i18n="admin.status">Status</th><th data-i18n="admin.actions">Actions</th></tr></thead><tbody id="categoriesBody"></tbody></table></div>
+        </div>
+        <div id="apage-orders" class="hide">
+          <h2 data-i18n="admin.orders">Orders</h2>
+          <div class="tablewrap"><table class="adtable"><thead><tr><th data-i18n="admin.orders">Order</th><th data-i18n="admin.customer">Customer</th><th data-i18n="admin.phone">Phone</th><th data-i18n="admin.address">Address</th><th data-i18n="admin.total">Total</th><th data-i18n="admin.status">Status</th><th data-i18n="admin.codPayment">COD Payment</th><th data-i18n="admin.details">Details</th></tr></thead><tbody id="allOrdersBody"></tbody></table></div>
+        </div>
+        <div id="apage-settings" class="hide">
+          <h2 data-i18n="admin.settings">Settings</h2>
+          <div class="summarybox"><div class="sumrow"><span data-i18n="admin.admin">Admin</span><b id="adminIdentity">—</b></div><div class="sumrow"><span data-i18n="admin.passwordStatus">Password status</span><span id="forceStatus">—</span></div></div>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="openPasswordModal(false)" data-i18n="admin.changePassword">Change password</button>
+          <div class="settingsform">
+            <h3 data-i18n="admin.storeInformation">Store information</h3>
+            <div class="formgrid"><div class="field"><label data-i18n="admin.shopName">Shop name</label><input id="set-shop_name"></div><div class="field"><label data-i18n="admin.phone">Phone</label><input id="set-phone"></div></div>
+            <div class="field"><label data-i18n="admin.tagline">Homepage tagline</label><input id="set-tagline"></div>
+            <div class="formgrid"><div class="field"><label data-i18n="admin.email">Email</label><input id="set-email" type="email"></div><div class="field"><label data-i18n="admin.businessHours">Business hours</label><input id="set-business_hours"></div></div>
+            <div class="field"><label data-i18n="admin.businessAddress">Business / delivery address</label><textarea id="set-address" rows="2"></textarea></div>
+            <h3 data-i18n="admin.deliveryPricing">Delivery pricing</h3>
+            <div class="formgrid"><div class="field"><label data-i18n="admin.deliveryCharge">Delivery charge (₹)</label><input id="set-delivery_charge" type="number" min="0"></div><div class="field"><label data-i18n="admin.freeDeliveryAbove">Free delivery above (₹)</label><input id="set-free_delivery_threshold" type="number" min="0"></div></div>
+            <button class="btn btn-dark" onclick="saveShopSettings()" data-i18n="admin.saveSettings">Save store settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hide" id="customerLoginModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('customerLoginModal')">✕</button>
+    <h3 data-i18n="login.customerTitle">Customer login</h3><p data-i18n="login.customerDescription">Sign in securely with your mobile number and OTP.</p>
+    <div class="field"><label data-i18n="login.mobile">Mobile number</label><input id="loginPhone" inputmode="numeric" maxlength="10" data-i18n-placeholder="login.mobilePlaceholder" placeholder="10-digit number"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="requestOtp()" data-i18n="login.sendOtp">Send OTP</button>
+    <div id="otpStep" class="hide" style="margin-top:14px"><div class="field"><label data-i18n="login.otp">OTP</label><input id="otpInput" inputmode="numeric" maxlength="6" data-i18n-placeholder="login.otpPlaceholder" placeholder="6-digit OTP"></div><div id="otpDev" style="font-size:.85rem"></div><button class="btn btn-dark" style="width:100%;margin-top:8px" onclick="verifyOtp()" data-i18n="login.verifyOtp">Verify OTP</button></div>
+    <div id="customerLoginErr" style="color:var(--danger);font-size:.85rem;margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="overlay hide" id="passwordModal">
+  <div class="modal">
+    <h3 data-i18n="password.title">Change admin password</h3><p id="passwordHint"></p>
+    <div class="field"><label data-i18n="password.current">Current password</label><input id="pwCurrent" type="password"></div>
+    <div class="field"><label data-i18n="password.new">New password</label><input id="pwNew" type="password" minlength="12" maxlength="72"></div>
+    <div class="field"><label data-i18n="password.confirm">Confirm new password</label><input id="pwConfirm" type="password" minlength="12" maxlength="72"></div>
+    <div id="passwordErr" style="color:var(--danger);font-size:.85rem;margin-bottom:10px"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="changeAdminPassword()" data-i18n="password.save">Save password</button>
+  </div>
+</div>
+
+<div class="overlay hide" id="orderModal"><div class="modal"><button class="modal-close" onclick="closeModal('orderModal')">✕</button><div id="orderModalBody"></div></div></div>
+
+<div class="overlay hide" id="productModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('productModal')">✕</button><div id="productModalBody"></div></div>
+</div>
+
+<div class="overlay hide" id="editorModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('editorModal')">✕</button>
+    <h3 id="editorTitle" data-i18n="admin.addFishTitle">Add fish</h3>
+    <div class="field"><label data-i18n="admin.name">Name</label><input id="pf-name"></div>
+    <div class="field"><label data-i18n="admin.category">Category</label><select id="pf-cat"></select></div>
+    <div class="field"><label data-i18n="admin.description">Description</label><textarea id="pf-desc" rows="2"></textarea></div>
+    <div class="field"><label data-i18n="admin.pricePerKg">Price per kg (₹)</label><input id="pf-price" type="number" min="0"></div>
+    <div class="field"><label data-i18n="admin.weightOptions">Weight options (grams, comma-separated)</label><input id="pf-weights" data-i18n-placeholder="admin.weightPlaceholder" placeholder="250,500,750,1000,1500,2000"></div><div class="field"><label data-i18n="admin.stockQuantity">Stock quantity (grams)</label><input id="pf-stockqty" type="number" min="0" value="999"></div>
+    <div class="field">
+      <label data-i18n="admin.productImage">Product image</label>
+      <input id="pf-image" type="file" accept="image/jpeg,image/png,image/webp" onchange="previewImage()">
+      <img id="pf-imgpreview" class="imgpreview hide">
+    </div>
+    <div class="field"><label><input type="checkbox" id="pf-avail" checked style="width:auto;margin-right:6px"><span data-i18n="admin.availableForSale">Available for sale</span></label></div>
+    <div class="field"><label><input type="checkbox" id="pf-stock" checked style="width:auto;margin-right:6px"><span data-i18n="admin.inStock">In stock</span></label></div>
+    <div id="editorErr" style="color:var(--danger);font-size:.85rem;margin-bottom:10px"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="saveProduct()" data-i18n="admin.saveFish">Save fish</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/translations/en.js"></script>
+<script src="/translations/ta.js"></script>
+<script src="/i18n.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

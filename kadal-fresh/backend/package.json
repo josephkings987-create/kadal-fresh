@@ -1,0 +1,22 @@
+{
+  "name": "kadal-fresh-backend",
+  "version": "1.0.0",
+  "description": "Kadal Fresh fish shop - Express API + SQLite database, serves the customer site and admin dashboard.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.4",
+    "express": "^4.22.3",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0"
+  }
+}

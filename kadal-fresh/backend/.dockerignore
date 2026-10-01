@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log*
+.env
+.env.*
+kadalfresh.db
+kadalfresh.db-shm
+kadalfresh.db-wal
+uploads/*
+!uploads/.gitkeep
