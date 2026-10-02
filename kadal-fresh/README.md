@@ -9,8 +9,7 @@ The database is the source of truth. Browser session storage is used only for tr
 ## Features
 
 ### Customer
-- Phone-number authentication with OTP.
-- Development OTP fallback can be exposed only when `DEV_OTP_EXPOSE=true` and `NODE_ENV` is not `production`.
+- Customer registration and phone/email + password login with bcrypt-hashed passwords.
 - Browse/search/filter fish and categories.
 - Select admin-configured weights.
 - Add items to a temporary cart.
@@ -36,8 +35,8 @@ The database is the source of truth. Browser session storage is used only for tr
 - Role-based authorization (`ADMIN` / `CUSTOMER`).
 - Server-side price and stock validation.
 - Customer order/address ownership checks.
-- OTP expiry and attempt limits.
-- Basic API rate limiting for auth/order routes.
+- Login and registration rate limiting.
+- Password length and input validation.
 - Security headers.
 - Image upload type and size validation.
 - Safe API errors without stack traces or credentials.
@@ -50,7 +49,6 @@ Main tables:
 
 - `admins`
 - `customers`
-- `customer_otps`
 - `categories`
 - `products`
 - `product_weight_options`
@@ -59,7 +57,7 @@ Main tables:
 - `order_items`
 - `payments`
 
-Existing databases are migrated with additive schema changes where needed; existing records are not intentionally deleted.
+Existing databases are migrated additively. Customer IDs and all existing orders, addresses, and relationships are preserved. Existing customer records without a password remain uncredentialed; they are not automatically claimable by phone alone. Contact the shop for a secure migration of those accounts.
 
 ## Setup
 
@@ -67,20 +65,19 @@ Existing databases are migrated with additive schema changes where needed; exist
 2. Open a terminal in `backend/`.
 3. Copy `.env.example` to `.env`.
 4. Replace `JWT_SECRET` with a long random secret (at least 32 characters). Never use the example value in production.
-5. For local development, `DEV_OTP_EXPOSE=true` lets the UI display the generated OTP. This must be disabled in production.
-6. Install dependencies from the package manifest and lockfile:
+5. Install dependencies from the package manifest and lockfile:
 
 ```bash
 npm install
 ```
 
-7. Start the server:
+6. Start the server:
 
 ```bash
 npm start
 ```
 
-8. Open `http://localhost:4000`.
+7. Open `http://localhost:4000`.
 
 ## Initial Admin
 
@@ -116,33 +113,15 @@ UPLOAD_DIR=/data/uploads
 JWT_SECRET=<random value of at least 32 characters>
 SEED_ADMIN_USERNAME=Selva
 SEED_ADMIN_PASSWORD=<unique password of at least 12 characters>
-DEV_OTP_EXPOSE=false
-OTP_TTL_MS=300000
-SMS_OTP_WEBHOOK_URL=https://<your-sms-provider-webhook>
-SMS_OTP_WEBHOOK_TOKEN=<private-provider-token>
 ```
 
-Railway supplies `PORT`. Generate the domain from the service's Networking settings; the health check is `/api/health`. Set `CORS_ORIGIN` to the generated URL if using another frontend origin. Configure `SMS_OTP_WEBHOOK_URL` and `SMS_OTP_WEBHOOK_TOKEN` to enable customer OTP; production login intentionally returns `503` until delivery is configured. Set real values in the hosting service's environment; never commit the provider token or a populated `.env` file. Never copy the local `.env` or `kadalfresh.db` into a public image. The Docker build excludes both; if you need existing local products/orders, migrate the database and images to `/data` using a secure one-time process.
+Railway supplies `PORT`. Generate the domain from the service's Networking settings; the health check is `/api/health`. Set `CORS_ORIGIN` to the generated URL if using another frontend origin. Set real secrets in the hosting service's environment; never commit a populated `.env` file. Never copy the local `.env` or `kadalfresh.db` into a public image. The Docker build excludes both; if you need existing local products/orders, migrate the database and images to `/data` using a secure one-time process.
 
 For immediate sharing before cloud deployment, a temporary HTTPS tunnel can expose a production-configured local server. The computer and server must stay on, the URL may change, and this is not permanent hosting.
 
-## OTP / SMS
+## Customer Authentication
 
-The application includes the complete OTP data model and verification flow. For local development, set:
-
-```env
-NODE_ENV=development
-DEV_OTP_EXPOSE=true
-```
-
-For production:
-
-```env
-NODE_ENV=production
-DEV_OTP_EXPOSE=false
-```
-
-A real SMS provider must be connected to `POST /api/auth/customer/request-otp` before the application is marketed as a live SMS-authenticated service. Configure `SMS_OTP_WEBHOOK_URL` (HTTPS) and `SMS_OTP_WEBHOOK_TOKEN`; the server POSTs `{ phone, otp, message }` with a bearer token and requires a successful response. In production, OTP is never returned by the API, and requests fail clearly when delivery is not configured. OTP digests use keyed HMAC-SHA256, expire after the configured TTL (bounded to 1-15 minutes), are single-use, and have limited attempts.
+Register with `POST /api/auth/customer/register` and sign in with `POST /api/auth/customer/login`. Both return a JWT and a public customer profile; password hashes and plaintext passwords are never returned. Customer endpoints continue to use the existing JWT role and `requireCustomer` middleware.
 
 ## COD Payment
 
@@ -167,8 +146,8 @@ At order creation, the backend retrieves the current product price and configure
 - `GET /api/settings`
 
 ### Customer Authentication
-- `POST /api/auth/customer/request-otp`
-- `POST /api/auth/customer/verify-otp`
+- `POST /api/auth/customer/register`
+- `POST /api/auth/customer/login`
 - `GET /api/auth/customer/me`
 - `PUT /api/auth/customer/profile`
 - `GET /api/auth/customer/addresses`
@@ -200,11 +179,9 @@ At order creation, the backend retrieves the current product price and configure
 Before deploying publicly, also configure:
 
 - HTTPS/TLS.
-- A real SMS/OTP provider.
 - A strong production `JWT_SECRET`.
-- Set `NODE_ENV=production`, `DEV_OTP_EXPOSE=false`, and restrict `CORS_ORIGIN` to the frontend origin(s).
+- Set `NODE_ENV=production` and restrict `CORS_ORIGIN` to the frontend origin(s).
 - A secure production admin password.
-- Configure an SMS provider before enabling customer OTP login.
 - Serve behind HTTPS before enabling HSTS; keep the database and uploads protected by host permissions.
 - Reverse proxy and process manager.
 - Database backups.

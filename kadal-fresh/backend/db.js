@@ -51,16 +51,6 @@ CREATE TABLE IF NOT EXISTS customers (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE IF NOT EXISTS customer_otps (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-  phone TEXT NOT NULL,
-  otp_hash TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
-  used_at TEXT,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
 CREATE TABLE IF NOT EXISTS addresses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -123,6 +113,8 @@ ensureColumn('admins', 'must_change_password', 'INTEGER NOT NULL DEFAULT 1');
 ensureColumn('admins', 'updated_at', 'TEXT');
 ensureColumn('admins', 'auth_version', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('categories', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
+ensureColumn('customers', 'email', 'TEXT');
+ensureColumn('customers', 'password_hash', 'TEXT');
 ensureColumn('products', 'stock_quantity', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('addresses', 'updated_at', 'TEXT');
 ensureColumn('payments', 'updated_at', 'TEXT');
@@ -136,9 +128,11 @@ CREATE INDEX IF NOT EXISTS idx_addresses_customer ON addresses(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
-CREATE INDEX IF NOT EXISTS idx_otps_phone ON customer_otps(phone, created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_email ON customers(email COLLATE NOCASE) WHERE email IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(order_status, created_at);
 `);
+
+db.exec('DROP TABLE IF EXISTS customer_otps');
 
 // Backfill legacy databases once, only when the stock column is first added.
 if (!hadStockQuantity) db.prepare('UPDATE products SET stock_quantity = CASE WHEN in_stock = 1 THEN 999000 ELSE 0 END').run();

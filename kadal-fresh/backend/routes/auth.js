@@ -4,17 +4,84 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../db');
 const { requireAdmin, requireCustomer } = require('../middleware/auth');
-const { sendOtp, SmsProviderConfigurationError } = require('../services/otpProvider');
 
 const router = express.Router();
-const configuredOtpTtl = Number(process.env.OTP_TTL_MS || 5 * 60 * 1000);
-const OTP_TTL_MS = Number.isFinite(configuredOtpTtl) ? Math.min(Math.max(configuredOtpTtl, 60000), 900000) : 300000;
-const OTP_MAX_ATTEMPTS = 5;
-const otpHash = (phone, otp) => crypto.createHmac('sha256', process.env.JWT_SECRET).update(`${phone}:${otp}`).digest('hex');
 const sign = (payload, expiresIn = '12h') => jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 12);
 
-function normalizePhone(phone) { return String(phone || '').replace(/\D/g, ''); }
+function normalizePhone(phone) {
+  if (typeof phone !== 'string' || !/^[+\d\s().-]+$/.test(phone.trim())) return '';
+  return phone.replace(/\D/g, '');
+}
 function validPhone(phone) { return /^\d{10}$/.test(phone); }
+function normalizeEmail(email) { return String(email || '').trim().toLowerCase(); }
+function validEmail(email) { return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+function publicCustomer(customer) {
+  return { id: customer.id, name: customer.name, phone: customer.phone, email: customer.email || null };
+}
+function issueCustomerToken(customer) {
+  const token = sign({ id: customer.id, phone: customer.phone, role: 'CUSTOMER' }, '7d');
+  return { token, customer: publicCustomer(customer) };
+}
+
+router.post('/customer/register', (req, res) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const phone = normalizePhone(req.body?.phone);
+  const rawEmail = typeof req.body?.email === 'string' ? req.body.email.trim() : req.body?.email;
+  const email = rawEmail == null || rawEmail === '' ? null : normalizeEmail(rawEmail);
+  const { password, confirmPassword } = req.body || {};
+  if (!name || name.length > 100) return res.status(400).json({ error: 'Enter a valid name.' });
+  if (!validPhone(phone)) return res.status(400).json({ error: 'Enter a valid 10-digit mobile number.' });
+  if (email !== null && !validEmail(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
+  if (typeof password !== 'string' || typeof confirmPassword !== 'string' || Array.from(password).length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
+    return res.status(400).json({ error: 'Password must be at least 12 characters and no more than 72 UTF-8 bytes.' });
+  }
+  if (password !== confirmPassword) return res.status(400).json({ error: 'New passwords do not match.' });
+  if (db.prepare('SELECT 1 FROM customers WHERE phone = ?').get(phone)) {
+    return res.status(409).json({ error: 'An account with this phone number already exists. Log in or contact the shop to recover access.' });
+  }
+  if (email && db.prepare('SELECT 1 FROM customers WHERE email = ? COLLATE NOCASE').get(email)) {
+    return res.status(409).json({ error: 'An account with this email address already exists.' });
+  }
+
+  const passwordHash = bcrypt.hashSync(password, 12);
+  let result;
+  try {
+    result = db.prepare('INSERT INTO customers (name, phone, email, password_hash) VALUES (?, ?, ?, ?)')
+      .run(name, phone, email, passwordHash);
+  } catch (error) {
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return res.status(409).json({ error: 'An account with this phone number or email already exists.' });
+    }
+    throw error;
+  }
+  const customer = db.prepare('SELECT id, name, phone, email FROM customers WHERE id = ?').get(result.lastInsertRowid);
+  return res.status(201).json(issueCustomerToken(customer));
+});
+
+router.post('/customer/login', (req, res) => {
+  const identifier = typeof req.body?.identifier === 'string' ? req.body.identifier.trim() : '';
+  const password = req.body?.password;
+  if (!identifier || identifier.length > 254 || typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) {
+    return res.status(400).json({ error: 'Enter your phone or email and password.' });
+  }
+
+  const isEmail = identifier.includes('@');
+  const email = isEmail ? normalizeEmail(identifier) : null;
+  const phone = isEmail ? null : normalizePhone(identifier);
+  if ((isEmail && !validEmail(email)) || (!isEmail && !validPhone(phone))) {
+    return res.status(400).json({ error: 'Enter a valid 10-digit mobile number or email address.' });
+  }
+
+  const customer = isEmail
+    ? db.prepare('SELECT id, name, phone, email, password_hash FROM customers WHERE email = ? COLLATE NOCASE').get(email)
+    : db.prepare('SELECT id, name, phone, email, password_hash FROM customers WHERE phone = ?').get(phone);
+  const passwordMatches = bcrypt.compareSync(password, customer?.password_hash || DUMMY_PASSWORD_HASH);
+  if (!customer || !customer.password_hash || !passwordMatches) {
+    return res.status(401).json({ error: 'Incorrect phone/email or password.' });
+  }
+  return res.json(issueCustomerToken(customer));
+});
 
 router.post('/login', (req, res) => {
   const { username, password } = req.body || {};
@@ -44,52 +111,8 @@ router.get('/admin/me', requireAdmin, (req, res) => {
   res.json({ id: admin.id, username: admin.username, mustChangePassword: !!admin.must_change_password });
 });
 
-router.post('/customer/request-otp', async (req, res) => {
-  const phone = normalizePhone(req.body?.phone);
-  if (!validPhone(phone)) return res.status(400).json({ error: 'Enter a valid 10-digit mobile number.' });
-  const recent = db.prepare(`SELECT COUNT(*) AS n FROM customer_otps WHERE phone = ? AND created_at >= datetime('now', '-1 minute')`).get(phone).n;
-  if (recent >= 3) return res.status(429).json({ error: 'Too many OTP requests. Please wait a minute.' });
-  let customer = db.prepare('SELECT * FROM customers WHERE phone = ?').get(phone);
-  if (!customer) {
-    const info = db.prepare('INSERT INTO customers (name, phone) VALUES (?, ?)').run('Customer', phone);
-    customer = { id: info.lastInsertRowid, phone, name: 'Customer' };
-  }
-  const otp = String(crypto.randomInt(100000, 1000000));
-  try { await sendOtp(phone, otp); }
-  catch (error) {
-    if (error instanceof SmsProviderConfigurationError) return res.status(503).json({ error: error.message });
-    return res.status(502).json({ error: 'Could not deliver the verification code. Please try again.' });
-  }
-  const expires = new Date(Date.now() + OTP_TTL_MS).toISOString();
-  db.prepare('UPDATE customer_otps SET used_at = CURRENT_TIMESTAMP WHERE phone = ? AND used_at IS NULL').run(phone);
-  db.prepare('INSERT INTO customer_otps (customer_id, phone, otp_hash, expires_at) VALUES (?, ?, ?, ?)').run(customer.id, phone, otpHash(phone, otp), expires);
-  const response = { ok: true, expiresInSeconds: Math.floor(OTP_TTL_MS / 1000) };
-  if (process.env.NODE_ENV !== 'production' && process.env.DEV_OTP_EXPOSE === 'true') response.devOtp = otp;
-  res.json(response);
-});
-
-router.post('/customer/verify-otp', (req, res) => {
-  const phone = normalizePhone(req.body?.phone);
-  const otp = String(req.body?.otp || '').trim();
-  if (!validPhone(phone) || !/^\d{6}$/.test(otp)) return res.status(400).json({ error: 'Valid phone number and 6-digit OTP are required.' });
-  const row = db.prepare(`SELECT * FROM customer_otps WHERE phone = ? AND used_at IS NULL ORDER BY created_at DESC LIMIT 1`).get(phone);
-  if (!row) return res.status(401).json({ error: 'OTP not found. Request a new OTP.' });
-  if (row.attempts >= OTP_MAX_ATTEMPTS) return res.status(429).json({ error: 'Too many OTP attempts. Request a new OTP.' });
-  if (new Date(row.expires_at).getTime() < Date.now()) return res.status(401).json({ error: 'OTP has expired. Request a new OTP.' });
-  const expected = Buffer.from(otpHash(phone, otp), 'hex');
-  const received = Buffer.from(row.otp_hash, 'hex');
-  if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) {
-    db.prepare('UPDATE customer_otps SET attempts = attempts + 1 WHERE id = ?').run(row.id);
-    return res.status(401).json({ error: 'Invalid OTP.' });
-  }
-  db.prepare('UPDATE customer_otps SET used_at = CURRENT_TIMESTAMP WHERE id = ?').run(row.id);
-  const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(row.customer_id);
-  const token = sign({ id: customer.id, phone: customer.phone, role: 'CUSTOMER' }, '7d');
-  res.json({ token, customer: { id: customer.id, name: customer.name, phone: customer.phone } });
-});
-
 router.get('/customer/me', requireCustomer, (req, res) => {
-  const customer = db.prepare('SELECT id, name, phone FROM customers WHERE id = ?').get(req.customer.id);
+  const customer = db.prepare('SELECT id, name, phone, email FROM customers WHERE id = ?').get(req.customer.id);
   if (!customer) return res.status(404).json({ error: 'Customer not found.' });
   const addresses = db.prepare('SELECT id, address_line, latitude, longitude, created_at, updated_at FROM addresses WHERE customer_id = ? ORDER BY updated_at DESC, id DESC').all(customer.id);
   res.json({ ...customer, addresses });
@@ -99,7 +122,7 @@ router.put('/customer/profile', requireCustomer, (req, res) => {
   const name = String(req.body?.name || '').trim();
   if (!name || name.length > 100) return res.status(400).json({ error: 'Enter a valid name.' });
   db.prepare('UPDATE customers SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(name, req.customer.id);
-  res.json(db.prepare('SELECT id, name, phone FROM customers WHERE id = ?').get(req.customer.id));
+  res.json(db.prepare('SELECT id, name, phone, email FROM customers WHERE id = ?').get(req.customer.id));
 });
 
 router.get('/customer/addresses', requireCustomer, (req, res) => {

@@ -258,10 +258,22 @@
 <div class="overlay hide" id="customerLoginModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('customerLoginModal')">✕</button>
-    <h3 data-i18n="login.customerTitle">Customer login</h3><p data-i18n="login.customerDescription">Sign in securely with your mobile number and OTP.</p>
-    <div class="field"><label data-i18n="login.mobile">Mobile number</label><input id="loginPhone" inputmode="numeric" maxlength="10" data-i18n-placeholder="login.mobilePlaceholder" placeholder="10-digit number"></div>
-    <button class="btn btn-primary" style="width:100%" onclick="requestOtp()" data-i18n="login.sendOtp">Send OTP</button>
-    <div id="otpStep" class="hide" style="margin-top:14px"><div class="field"><label data-i18n="login.otp">OTP</label><input id="otpInput" inputmode="numeric" maxlength="6" data-i18n-placeholder="login.otpPlaceholder" placeholder="6-digit OTP"></div><div id="otpDev" style="font-size:.85rem"></div><button class="btn btn-dark" style="width:100%;margin-top:8px" onclick="verifyOtp()" data-i18n="login.verifyOtp">Verify OTP</button></div>
+    <h3 data-i18n="login.customerTitle">Customer account</h3><p data-i18n="login.customerDescription">Sign in or create an account with your phone number and password.</p>
+    <form id="customerLoginForm" onsubmit="return customerLogin(event)">
+      <div class="field"><label data-i18n="login.identifier">Phone number or email</label><input id="loginIdentifier" autocomplete="username" maxlength="254" required data-i18n-placeholder="login.identifierPlaceholder" placeholder="10-digit number or email"></div>
+      <div class="field"><label data-i18n="login.password">Password</label><input id="loginPassword" type="password" autocomplete="current-password" maxlength="72" required></div>
+      <button class="btn btn-primary" style="width:100%" type="submit" data-i18n="login.signIn">Sign in</button>
+      <p style="text-align:center;margin:14px 0 0"><span data-i18n="login.noAccount">New to Kadal Fresh?</span> <button class="btn-ghost" type="button" onclick="setCustomerAuthMode('register')" data-i18n="login.createAccount">Create an account</button></p>
+    </form>
+    <form id="customerRegisterForm" class="hide" onsubmit="return customerRegister(event)">
+      <div class="field"><label data-i18n="login.fullName">Full name</label><input id="registerName" autocomplete="name" maxlength="100" required></div>
+      <div class="field"><label data-i18n="login.mobile">Mobile number</label><input id="registerPhone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" required data-i18n-placeholder="login.mobilePlaceholder" placeholder="10-digit number"></div>
+      <div class="field"><label data-i18n="login.emailOptional">Email (optional)</label><input id="registerEmail" type="email" autocomplete="email" maxlength="254"></div>
+      <div class="field"><label data-i18n="login.password">Password</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></div>
+      <div class="field"><label data-i18n="login.confirmPassword">Confirm password</label><input id="registerConfirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></div>
+      <button class="btn btn-primary" style="width:100%" type="submit" data-i18n="login.register">Create account</button>
+      <p style="text-align:center;margin:14px 0 0"><span data-i18n="login.haveAccount">Already have an account?</span> <button class="btn-ghost" type="button" onclick="setCustomerAuthMode('login')" data-i18n="login.signIn">Sign in</button></p>
+    </form>
     <div id="customerLoginErr" style="color:var(--danger);font-size:.85rem;margin-top:10px"></div>
   </div>
 </div>

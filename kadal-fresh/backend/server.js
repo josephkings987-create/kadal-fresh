@@ -53,6 +53,8 @@ function rateLimit(prefix, windowMs, max) {
   };
 }
 app.use(rateLimit('/api/auth', 60_000, 30));
+app.use(rateLimit('/api/auth/customer/login', 60_000, 10));
+app.use(rateLimit('/api/auth/customer/register', 60_000, 5));
 app.use(rateLimit('/api/orders', 60_000, 60));
 
 const uploadDir = path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, 'uploads'));

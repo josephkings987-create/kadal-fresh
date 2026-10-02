@@ -12,7 +12,7 @@ A complete customer storefront + admin dashboard powered by **Express + SQLite**
 - Weight selection (grams/kg) and quantity controls
 - Server-side pricing from the database
 - Temporary cart in session storage
-- Customer login with phone + OTP flow
+- Customer registration and phone/email + password login
 - Customer profile and private order history
 - Saved delivery addresses and optional browser location permission
 - Cash on Delivery only
@@ -64,26 +64,20 @@ npm start
 
 The first login is forced to change the password. If you already have an older `kadalfresh.db`, the existing admin account is preserved instead of being overwritten.
 
-## Customer OTP development mode
-
-In development, `.env.example` enables `DEV_OTP_EXPOSE=true`, so the generated OTP is shown on screen instead of requiring a real SMS provider.
-
-For a live deployment, set `NODE_ENV=production`, set `DEV_OTP_EXPOSE=false`, and configure `SMS_OTP_WEBHOOK_URL` (HTTPS) plus `SMS_OTP_WEBHOOK_TOKEN`. The server POSTs `{ phone, otp, message }` to that URL with a bearer token. Production APIs never return OTP values and reject OTP requests if delivery is not configured.
+Customer passwords must be at least 12 characters and no more than 72 UTF-8 bytes. They are stored only as bcrypt hashes. Registration and login are rate limited.
 
 ## Production checklist
 
 - Use a strong random `JWT_SECRET` of 32+ characters.
 - Set `CORS_ORIGIN` to the exact frontend origin instead of `true`.
-- Keep `DEV_OTP_EXPOSE=false` and connect a real SMS provider.
 - Use HTTPS.
-- Connect a real SMS/OTP provider.
 - Prefer secure HttpOnly cookies for a hardened deployment instead of browser token storage.
 - Back up SQLite and uploads, or migrate to PostgreSQL/cloud storage when scale requires it.
 - Add monitoring, centralized rate limiting and a reverse proxy for public traffic.
 
 ## Database
 
-The application creates `kadalfresh.db` automatically on first startup. It contains admins, customers, OTP records, addresses, categories, products, weight options, orders, order items, payments and store settings. Stock migrations run once when the stock column is added; a zero stock level is never reset on later starts.
+The application creates `kadalfresh.db` automatically on first startup. It contains admins, customers, addresses, categories, products, weight options, orders, order items, payments and store settings. Existing customer IDs and orders are preserved when nullable email and password-hash columns are added. Existing records without credentials remain uncredentialed and cannot be claimed by phone alone; contact the shop for secure migration. Temporary verification records are removed.
 
 ## Important
 
