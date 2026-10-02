@@ -26,5 +26,6 @@ window.KADAL_TRANSLATIONS.en = {
   'password.changedLoginAgain': 'Password changed successfully. Please log in again with your new password.',
   'error.newPasswordRequired': 'Current password and new password are required.',
   'error.samePassword': 'New password must be different from the current password.',
-  'home.noProducts': 'No fish available right now.'
+  'home.noProducts': 'No fish available right now.',
+  'error.smsProviderRequired': 'Customer sign-in requires an SMS provider. Configure SMS_OTP_WEBHOOK_URL and SMS_OTP_WEBHOOK_TOKEN (HTTPS in production).'
 };

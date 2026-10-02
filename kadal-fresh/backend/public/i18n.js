@@ -13,6 +13,7 @@
     'Admin not found.': 'error.adminMissing',
     'Enter a valid 10-digit mobile number.': 'error.phoneInvalid',
     'Customer sign-in is temporarily unavailable. Contact the shop administrator.': 'error.signInUnavailable',
+    'Customer sign-in requires an SMS provider. Configure SMS_OTP_WEBHOOK_URL and SMS_OTP_WEBHOOK_TOKEN (HTTPS in production).': 'error.smsProviderRequired',
     'Too many OTP requests. Please wait a minute.': 'error.otpRate',
     'Could not deliver the verification code. Please try again.': 'error.otpDelivery',
     'Valid phone number and 6-digit OTP are required.': 'error.otpRequired',

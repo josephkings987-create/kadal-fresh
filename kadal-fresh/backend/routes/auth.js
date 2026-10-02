@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../db');
 const { requireAdmin, requireCustomer } = require('../middleware/auth');
+const { sendOtp, SmsProviderConfigurationError } = require('../services/otpProvider');
 
 const router = express.Router();
 const configuredOtpTtl = Number(process.env.OTP_TTL_MS || 5 * 60 * 1000);
@@ -14,26 +15,6 @@ const sign = (payload, expiresIn = '12h') => jwt.sign(payload, process.env.JWT_S
 
 function normalizePhone(phone) { return String(phone || '').replace(/\D/g, ''); }
 function validPhone(phone) { return /^\d{10}$/.test(phone); }
-
-async function deliverOtp(phone, otp) {
-  const endpoint = process.env.SMS_OTP_WEBHOOK_URL;
-  if (!endpoint) return process.env.NODE_ENV !== 'production';
-  let url;
-  try { url = new URL(endpoint); } catch (_) { return false; }
-  if (url.protocol !== 'https:' && process.env.NODE_ENV === 'production') return false;
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.SMS_OTP_WEBHOOK_TOKEN ? { Authorization: `Bearer ${process.env.SMS_OTP_WEBHOOK_TOKEN}` } : {}),
-      },
-      body: JSON.stringify({ phone, otp, message: `Your Kadal Fresh verification code is ${otp}.` }),
-      signal: AbortSignal.timeout(8000),
-    });
-    return response.ok;
-  } catch (_) { return false; }
-}
 
 router.post('/login', (req, res) => {
   const { username, password } = req.body || {};
@@ -66,9 +47,6 @@ router.get('/admin/me', requireAdmin, (req, res) => {
 router.post('/customer/request-otp', async (req, res) => {
   const phone = normalizePhone(req.body?.phone);
   if (!validPhone(phone)) return res.status(400).json({ error: 'Enter a valid 10-digit mobile number.' });
-  if (process.env.NODE_ENV === 'production' && (!process.env.SMS_OTP_WEBHOOK_URL || !process.env.SMS_OTP_WEBHOOK_TOKEN)) {
-    return res.status(503).json({ error: 'Customer sign-in is temporarily unavailable. Contact the shop administrator.' });
-  }
   const recent = db.prepare(`SELECT COUNT(*) AS n FROM customer_otps WHERE phone = ? AND created_at >= datetime('now', '-1 minute')`).get(phone).n;
   if (recent >= 3) return res.status(429).json({ error: 'Too many OTP requests. Please wait a minute.' });
   let customer = db.prepare('SELECT * FROM customers WHERE phone = ?').get(phone);
@@ -77,7 +55,11 @@ router.post('/customer/request-otp', async (req, res) => {
     customer = { id: info.lastInsertRowid, phone, name: 'Customer' };
   }
   const otp = String(crypto.randomInt(100000, 1000000));
-  if (process.env.SMS_OTP_WEBHOOK_URL && !await deliverOtp(phone, otp)) return res.status(502).json({ error: 'Could not deliver the verification code. Please try again.' });
+  try { await sendOtp(phone, otp); }
+  catch (error) {
+    if (error instanceof SmsProviderConfigurationError) return res.status(503).json({ error: error.message });
+    return res.status(502).json({ error: 'Could not deliver the verification code. Please try again.' });
+  }
   const expires = new Date(Date.now() + OTP_TTL_MS).toISOString();
   db.prepare('UPDATE customer_otps SET used_at = CURRENT_TIMESTAMP WHERE phone = ? AND used_at IS NULL').run(phone);
   db.prepare('INSERT INTO customer_otps (customer_id, phone, otp_hash, expires_at) VALUES (?, ?, ?, ?)').run(customer.id, phone, otpHash(phone, otp), expires);

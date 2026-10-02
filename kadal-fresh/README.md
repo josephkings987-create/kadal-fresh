@@ -118,9 +118,11 @@ SEED_ADMIN_USERNAME=Selva
 SEED_ADMIN_PASSWORD=<unique password of at least 12 characters>
 DEV_OTP_EXPOSE=false
 OTP_TTL_MS=300000
+SMS_OTP_WEBHOOK_URL=https://<your-sms-provider-webhook>
+SMS_OTP_WEBHOOK_TOKEN=<private-provider-token>
 ```
 
-Railway supplies `PORT`. Generate the domain from the service's Networking settings; the health check is `/api/health`. Set `CORS_ORIGIN` to the generated URL if using another frontend origin. Configure `SMS_OTP_WEBHOOK_URL` and `SMS_OTP_WEBHOOK_TOKEN` to enable customer OTP; production login intentionally returns `503` until delivery is configured. Never copy the local `.env` or `kadalfresh.db` into a public image. The Docker build excludes both; if you need existing local products/orders, migrate the database and images to `/data` using a secure one-time process.
+Railway supplies `PORT`. Generate the domain from the service's Networking settings; the health check is `/api/health`. Set `CORS_ORIGIN` to the generated URL if using another frontend origin. Configure `SMS_OTP_WEBHOOK_URL` and `SMS_OTP_WEBHOOK_TOKEN` to enable customer OTP; production login intentionally returns `503` until delivery is configured. Set real values in the hosting service's environment; never commit the provider token or a populated `.env` file. Never copy the local `.env` or `kadalfresh.db` into a public image. The Docker build excludes both; if you need existing local products/orders, migrate the database and images to `/data` using a secure one-time process.
 
 For immediate sharing before cloud deployment, a temporary HTTPS tunnel can expose a production-configured local server. The computer and server must stay on, the URL may change, and this is not permanent hosting.
 

@@ -26,5 +26,6 @@ window.KADAL_TRANSLATIONS.ta = {
   'password.changedLoginAgain': 'கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது. புதிய கடவுச்சொல்லுடன் மீண்டும் உள்நுழையவும்.',
   'error.newPasswordRequired': 'தற்போதைய மற்றும் புதிய கடவுச்சொற்களை உள்ளிடவும்.',
   'error.samePassword': 'புதிய கடவுச்சொல் தற்போதைய கடவுச்சொல்லிலிருந்து வேறுபட்டதாக இருக்க வேண்டும்.',
-  'home.noProducts': 'தற்போது மீன் கிடைக்கவில்லை.'
+  'home.noProducts': 'தற்போது மீன் கிடைக்கவில்லை.',
+  'error.smsProviderRequired': 'வாடிக்கையாளர் உள்நுழைவுக்கு SMS சேவை தேவை. SMS_OTP_WEBHOOK_URL மற்றும் SMS_OTP_WEBHOOK_TOKEN அமைக்கவும் (உற்பத்தியில் HTTPS தேவை).'
 };
